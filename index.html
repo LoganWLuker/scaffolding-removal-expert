@@ -13,59 +13,73 @@
 </head>
 <body>
 
-    <h1>Hyperobjects AI</h1>
-    <p>Ask a question about hyperobjects or ecological philosophy.</p>
+    <h1>Distinguishing Between AI & Human Rhetoric</h1>
+    <p>Enter text and I'll tell you whether I think it's written by an AI or a human</p>
 
-    <textarea id="userPrompt" placeholder="E.g., What is a hyperobject?"></textarea>
+        <label for="systemPrompt">Analysis Mode:</label>
+    <select id="systemPrompt">
+        <option value="You are an expert AI assistant that specializes in locating AI generated writing and directing users towards it.">"You are an expert AI assistant that specializes in locating AI generated writing and directing users towards it."</option>
+        <option value="You are an expert AI assistant that specializes in reading documents for AI assisted writing.">"You are an expert AI assistant that specializes in reading documents for AI assisted writing."</option>
+        <option value="You are an expert AI assistant that specializes in helping people replace AI assisted writing in their work.">"You are an expert AI assistant that specializes in helping people replace AI assisted writing in their work."</option>
+        <option value="You are an expert AI assistant that specializes in locating AI rhetoric and replacing it with human-sounding rhetoric.">"You are an expert AI assistant that specializes in locating AI rhetoric and replacing it with human-sounding rhetoric."</option>
+        <option value="You are an expert AI assistant that specializes in determining whether a given piece of text was written by an AI or a human.">"You are an expert AI assistant that specializes in determining whether a given piece of text was written by an AI or a human."</option>
+    </select>
+
+        <label for="corpusSelect">Corpus:</label>
+    <select id="corpusSelect">
+        <option value="TaggedNoChangesCorpus.txt">Original Corpus</option>
+        <option value="CleanedCorpus.txt">Cleaned Corpus</option>
+    </select>
+
+    <textarea id="userPrompt" placeholder="Paste a passage of text to analyze..."></textarea>
     <br>
-    <button id="askButton">Ask Model</button>
+    <button id="askButton">Analyze</button>
 
     <div id="output">The model's response will appear here...</div>
 
-    <script>
-        // Replace this URL with your actual Hugging Face Space Direct URL
-        // It usually looks like: https://YOUR_USERNAME-YOUR_SPACE_NAME.hf.space/api/generate
+       <script>
         const apiUrl = "https://jim0thee-scaffolding-removal-api.hf.space/api/generate";
-
+ 
         document.getElementById("askButton").addEventListener("click", async () => {
             const promptInput = document.getElementById("userPrompt").value;
+            const systemPrompt = document.getElementById("systemPrompt").value;
             const outputDiv = document.getElementById("output");
-            
+ 
             if (!promptInput) return;
-
             outputDiv.innerText = "Thinking...";
-
-            // 1. The Corpus Context
-            const corpusContext = "A hyperobject is an entity so massive that it is distributed across vast scales of space and time, making it impossible for humans to grasp in its entirety. Coined by philosopher Timothy Morton, the term is often used in the context of environmental issues like global warming, which have effects that are felt globally and over long periods, but are not visible as a single, discrete object.";
-
-            // 2. The Combined Prompt (In-Context Learning)
-            const fullPrompt = `Context: ${corpusContext}\n\nQuestion: ${promptInput}`;
-
-            // 3. The API Request
+   
             try {
+                // Fetch the corpus from the selected file
+                const corpusFile = document.getElementById("corpusSelect").value;
+                const corpusResponse = await fetch(corpusFile);
+                const corpusContext = await corpusResponse.text();
+
+                // Combine corpus context with user input
+                const fullPrompt = `Context: ${corpusContext}\n\nPassage to analyze: ${promptInput}`;
+
                 const response = await fetch(apiUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "hyperobjects",
                         prompt: fullPrompt,
-                        stream: false // Set to false to get the whole response at once
+                        system: systemPrompt,
+                        stream: false
                     })
                 });
-
-                // Check the numerical status code to ensure a successful response
+ 
                 if (response.status === 200) {
                     const data = await response.json();
                     outputDiv.innerText = data.response;
                 } else {
                     outputDiv.innerText = `Error: Received status code ${response.status} from the server.`;
                 }
-
             } catch (error) {
-                outputDiv.innerText = "Network error: Could not reach the model. Make sure the Hugging Face Space is running.";
+                outputDiv.innerText = "Network error: Could not reach the model or load the corpus. Make sure the Hugging Face Space is running and corpus.txt is uploaded.";
                 console.error(error);
             }
         });
     </script>
 </body>
 </html>
+ 
